@@ -43,9 +43,10 @@
 -- 2016-03-31 - It is now posible to use Telegram as push. Change WU.pushOption value to Telegram or Fibaro. 
 --            - also change WU.Telegramtoken and WU.Telegramchat_id to your values
 -- 2016-04-01 - Fixed bug when using Telegram push, forecast must send with lowercases.
+-- 2016-05-26 - Added support for multiple smartphone id when sending push
 
 
-version = "{2.2.1}"
+version = "{2.3.0}"
 
 WU = {}
 
@@ -61,7 +62,7 @@ WU.LOCID = "SWXX0076"         -- The location ID to get data for (City location)
 WU.station = "PWS"            -- PWS or LOCID
   
 -- Other settings
-WU.smartphoneID = 211         -- your smartphone ID
+WU.smartphoneID = {211}       -- your smartphone ID's ie 211,233,333
 WU.push_fcst1 = "06:30"       -- time when forecast for today will be pushed to smartphone
 WU.push_fcst2 = "17:00"       -- time when forecast for tonight will be pushed to smartphone
 WU.sendPush = true            -- send forecast with push
@@ -378,10 +379,11 @@ local function processWU(response)
                   if WU.pushOption == "Fibaro" then
                     fcastday = fcstday1
                     fcast = fcst1
-                    fibaro:call(WU.smartphoneID , "sendPush", fcstday1.." - "..fcst1)
-                    popupIMG = "http://jonnylarsson.se/JL/png/"..icon..".png"
-                    sendPopup()
-                  --end
+                    for i = 1,#WU.smartphoneID do
+                    	fibaro:call(WU.smartphoneID , "sendPush", fcstday1.." - "..fcst1)
+                    	popupIMG = "http://jonnylarsson.se/JL/png/"..icon..".png"
+                    	sendPopup()
+                  	end
                   elseif WU.pushOption == "Telegram" then
                   Telegrambot(fcstday1.." - "..string.lower(fcst1).." - "..fcst1icon)
                   end
