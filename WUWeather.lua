@@ -44,9 +44,11 @@
 --            - also change WU.Telegramtoken and WU.Telegramchat_id to your values
 -- 2016-04-01 - Fixed bug when using Telegram push, forecast must send with lowercases.
 -- 2016-05-26 - Added support for multiple smartphone id when sending push
+-- 2016-05-30 - Implemented "UPDATE SECTION"
+-- 2016-07-13 - Bug fixed some code for sendPush to fibaro app
+-- 2016-07-14 - Telegram, possible to have forecast pushed to 2 different chat_id's
 
-
-version = "{2.3.0}"
+version = "{2.4.0}"
 
 WU = {}
 
@@ -56,25 +58,30 @@ versionCheck = true   -- check if new version of script exist on server
 WU.language = "SW";  -- EN, FR, SW, PL, NL, DE, NO (default is en)
 
 -- WU settings
-WU.APIkey = "xxxxxxxxx"  -- Put your WU api key here
+WU.APIkey = "xxxxxxxxx"       -- Put your WU api key here
 WU.PWS = "IGVLEBOR5"          -- The PWS location to get data for (Personal Weather Station)
 WU.LOCID = "SWXX0076"         -- The location ID to get data for (City location)
 WU.station = "PWS"            -- PWS or LOCID
   
 -- Other settings
-WU.smartphoneID = {211}       -- your smartphone ID's ie 211,233,333
+WU.smartphoneID = {279,32}      -- your smartphone ID's ie 211,233,333
 WU.push_fcst1 = "06:30"       -- time when forecast for today will be pushed to smartphone
 WU.push_fcst2 = "17:00"       -- time when forecast for tonight will be pushed to smartphone
 WU.sendPush = true            -- send forecast with push
-WU.pushOption = "Telegram"    -- Use Fibaro or Telegram?
+WU.pushOption = "Telegram"      -- Use Fibaro or Telegram?
 
 -- Telegram settings
+WU.dualChat_ID = false         -- set to true if more then 1 smartphone that should have forecast pushed.
 WU.Telegramtoken = "YOUR:TOKEN"
 WU.Telegramchat_id = "2025xxxxx"
+WU.Telegramchat_id2 = "2025xxxxx"
 WU.Telegramurl = "https://api.telegram.org/bot"..WU.Telegramtoken.."/sendMessage?chat_id="..WU.Telegramchat_id.."&text="
+WU.Telegramurl2 = "https://api.telegram.org/bot"..WU.Telegramtoken.."/sendMessage?chat_id="..WU.Telegramchat_id2.."&text="
 
-updateEvery = 5               -- get data every xx minutes
+updateEvery = 1               -- get data every xx minutes
 WU.selfId = 150               -- ID of virtual device
+
+---- UPDATE FROM HERE ----
 
 
 WU.translation = {true}
@@ -246,7 +253,7 @@ selfhttp:request(url, {
   success = function(status)
     local result = json.decode(status.data);
     if result.ok == true then
-      Debug("grey", "Sucessfully sent message  to Telegram Bot...") 
+      Debug("grey", "Sucessfully sent message to Telegram Bot...") 
     else
       --errorlog("failed");
       print(status.data);
@@ -257,6 +264,31 @@ selfhttp:request(url, {
     Debug("red", error) 
   end
 })
+
+if WU.dualChat_ID then
+url2 = WU.Telegramurl2 .. msg
+
+selfhttp:request(url2, {
+  options={
+    headers = selfhttp.controlHeaders,
+    data = requestBody,
+    method = 'GET'
+    },
+  success = function(status)
+    local result = json.decode(status.data);
+    if result.ok == true then
+      Debug("grey", "Sucessfully sent message to Telegram Bot...") 
+    else
+      --errorlog("failed");
+      print(status.data);
+    end
+  end,
+  error = function(error)
+    --errorlog("ERROR")
+    Debug("red", error) 
+  end
+})  
+end
 end
 
 function versionChecker()
@@ -379,11 +411,11 @@ local function processWU(response)
                   if WU.pushOption == "Fibaro" then
                     fcastday = fcstday1
                     fcast = fcst1
-                    for i = 1,#WU.smartphoneID do
-                    	fibaro:call(WU.smartphoneID , "sendPush", fcstday1.." - "..fcst1)
-                    	popupIMG = "http://jonnylarsson.se/JL/png/"..icon..".png"
-                    	sendPopup()
-                  	end
+                    for i, j in pairs(WU.smartphoneID) do
+                      fibaro:call(j, "sendPush", fcstday1.." - "..fcst1)
+                      popupIMG = "http://jonnylarsson.se/JL/png/"..icon..".png"
+                      sendPopup()
+                    end
                   elseif WU.pushOption == "Telegram" then
                   Telegrambot(fcstday1.." - "..string.lower(fcst1).." - "..fcst1icon)
                   end
@@ -391,12 +423,13 @@ local function processWU(response)
                   if WU.pushOption == "Fibaro" then
                   fcastday = fcstday2
                   fcast = fcst2
-                  fibaro:call(WU.smartphoneID , "sendPush", fcstday2.." - "..fcst2)
-                  popupIMG = "http://jonnylarsson.se/JL/png/nt_"..icon..".png"
-                  sendPopup()
-                  --end
+                    for i, j in pairs(WU.smartphoneID) do
+                      fibaro:call(j , "sendPush", fcstday2.." - "..fcst2)
+                      popupIMG = "http://jonnylarsson.se/JL/png/nt_"..icon..".png"
+                      sendPopup()
+                    end
                   elseif WU.pushOption == "Telegram" then
-                  Telegrambot(fcstday2.." - "..string.lower(fcst2).." - "..fcst2icon)
+                      Telegrambot(fcstday2.." - "..string.lower(fcst2).." - "..fcst2icon)
                   end
                 end
             end
@@ -435,3 +468,5 @@ end
 Debug( "yellow", "Morning forecast push will be: "..WU.push_fcst1);
 Debug( "yellow", "Afternoon forecast push will be: "..WU.push_fcst2);
 processWU() --this starts an endless loop, until an error occurs
+
+---- END OF UPDATE ----
