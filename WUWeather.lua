@@ -10,6 +10,8 @@
 -- 2. lblTemp, lblHum, lblBar, lblWind, lblRain, lblFcst, lblStation, lblUpdate, lblNotify
 -- 3. Change ID of virtual device in WU.selfId
 
+-- FIRST TIME USERS NEEDS TO COPY ALL CODE TO SCENE, after version 2.5.0 it should only be neccessary to update from "UPDATE FROM HERE" text
+
 -- NOTE --
 -- Scheduled time you set for forecast push is just an indication of time.
 -- Real time will be the hour you set + minute of when scene starts.
@@ -47,42 +49,63 @@
 -- 2016-05-30 - Implemented "UPDATE SECTION"
 -- 2016-07-13 - Bug fixed some code for sendPush to fibaro app
 -- 2016-07-14 - Telegram, possible to have forecast pushed to 2 different chat_id's
+-- 2016-07-15 - Save all importent values to variable. 
+-- 2016-07-15 - Added RO, GR, PT, RU and CZ translation
 
-version = "{2.4.0}"
+version = "{2.5.0}"
 
 WU = {}
 
 
 versionCheck = true   -- check if new version of script exist on server
 
-WU.language = "SW";  -- EN, FR, SW, PL, NL, DE, NO (default is en)
+WU.language = "SW";  -- EN, FR, SW, PL, NL, DE, NO, RO, CZ, GR, PT, RU (default is en)
+
 
 -- WU settings
-WU.APIkey = "xxxxxxxxx"       -- Put your WU api key here
+WU.APIkey = "14eaxxxxxxxxx"       -- Put your WU api key here
 WU.PWS = "IGVLEBOR5"          -- The PWS location to get data for (Personal Weather Station)
 WU.LOCID = "SWXX0076"         -- The location ID to get data for (City location)
 WU.station = "PWS"            -- PWS or LOCID
   
 -- Other settings
-WU.smartphoneID = {279,32}      -- your smartphone ID's ie 211,233,333
+WU.smartphoneID = {281,32}      -- your smartphone ID's ie 211,233,333
 WU.push_fcst1 = "06:30"       -- time when forecast for today will be pushed to smartphone
 WU.push_fcst2 = "17:00"       -- time when forecast for tonight will be pushed to smartphone
 WU.sendPush = true            -- send forecast with push
 WU.pushOption = "Telegram"      -- Use Fibaro or Telegram?
 
 -- Telegram settings
+-- IMPORTANT --
+-- Telegramtoken needs to splitted into 2 parts. First part1 is before the ":", part2 is after the ":"
+WU.Telegramtoken1_part1 = "1877xxxxx"
+WU.Telegramtoken1_part2 = "AAHfzhTcsxxxxxxxxxxxxxxxxxx"
+WU.Telegramchat_id1 = "2025xxxxx"
+-- If you want forecast to be pushed to a second phone
 WU.dualChat_ID = false         -- set to true if more then 1 smartphone that should have forecast pushed.
-WU.Telegramtoken = "YOUR:TOKEN"
-WU.Telegramchat_id = "2025xxxxx"
+WU.Telegramtoken2_part1 = "1877xxxxx"
+WU.Telegramtoken2_part2 = "AAHfzhTcsxxxxxxxxxxxxxxxxxx"
 WU.Telegramchat_id2 = "2025xxxxx"
-WU.Telegramurl = "https://api.telegram.org/bot"..WU.Telegramtoken.."/sendMessage?chat_id="..WU.Telegramchat_id.."&text="
-WU.Telegramurl2 = "https://api.telegram.org/bot"..WU.Telegramtoken.."/sendMessage?chat_id="..WU.Telegramchat_id2.."&text="
 
-updateEvery = 1               -- get data every xx minutes
+updateEvery = 5               -- get data every xx minutes
 WU.selfId = 150               -- ID of virtual device
 
----- UPDATE FROM HERE ----
 
+---- UPDATE FROM HERE ----
+-- Read settings from variable
+if not(fibaro:getGlobal("WUAPI") == nil) and (fibaro:getGlobal("Telegramtoken_part1") == nil) and (fibaro:getGlobal("Telegramtoken_part2") == nil) and (fibaro:getGlobal("Telegramchat_id") == nil) and (fibaro:getGlobal("Telegramchat_id2") == nil ) then
+  WU.APIkey = fibaro:getGlobal("WUAPI")
+  WU.Telegramtoken1 = fibaro:getGlobal("Telegramtoken1_part1")..":"..fibaro:getGlobal("Telegramtoken1_part2")
+  WU.Telegramchat_id1 = fibaro:getGlobal("Telegramchat_id1")
+  WU.Telegramurl1 = "https://api.telegram.org/bot"..WU.Telegramtoken1.."/sendMessage?chat_id="..WU.Telegramchat_id1.."&text="
+ 
+  if WU.dualChat_ID then
+    WU.Telegramtoken2 = fibaro:getGlobal("Telegramtoken2_part1")..":" fibaro:getGlobal("Telegramtoken2_part2")
+    WU.Telegramchat_id2 = fibaro:getGlobal("Telegramchat_id2")
+    WU.Telegramurl2 = "https://api.telegram.org/bot"..WU.Telegramtoken2.."/sendMessage?chat_id="..WU.Telegramchat_id2.."&text="
+  end
+end
+-- End read settings from variable
 
 WU.translation = {true}
 WU.currentDate = os.date("*t"); 
@@ -210,6 +233,7 @@ WU.translation["DE"] = {
 }
 
 WU.translation["NO"] = {
+    Exiting_loop_push = "Exiting_loop_push",
     Push_forecast = "Push værmelding",
     Temperature = "Temperatur",
     Humidity = "Fuktighet",
@@ -226,6 +250,95 @@ WU.translation["NO"] = {
     NO_DATA_FOUND = "Ingen data hos WU"
 }
 
+WU.translation["CZ"] = {
+    Exiting_loop_push = "Exiting_loop_push",
+    Push_forecast = "Push forecast",
+    Temperature = "Teplota",
+    Humidity = "Vlhkost",
+    Pressure = "(Atmosférický) Tlak",
+    Wind = "Vítr",
+    Rain = "Déšť ",
+    Forecast = "Předpověď",
+    Station = "Stanice",
+    Fetched = "Předána",
+    Data_processed = "Data_zpracována",
+    Update_interval = "Časová_prodleva_mezi_aktualizacemi",
+    No_data_fetched = "Data_nebyla_předána",
+    NO_STATIONID_FOUND = "Stanice_nenalezena",
+    NO_DATA_FOUND = "Data_Nenalezena"
+}
+
+WU.translation["RO"] = {
+    Exiting_loop_push = "Exiting_loop_push",
+    Push_forecast = "Prognoza apăsare",
+    Temperature = "Temperatura",
+    Humidity = "Umiditate",
+    Pressure = "Presiune",
+    Wind = "Vant",
+    Rain = "Ploaie",
+    Forecast = "Prognoza",
+    Station = "Statie",
+    Fetched = "Preluat",
+    Data_processed = "Datele prelucrate",
+    Update_interval = "Urmatorul update va fi in (min)",
+    No_data_fetched = "Nu exista date preluate",
+    NO_STATIONID_FOUND = "Nu a fost gasit stationID ",
+    NO_DATA_FOUND = "Datele nu au fost gasite"
+}
+
+WU.translation["GR"] = {
+    Exiting_loop_push = "Exiting_loop_push",
+    Push_forecast = "Πρόγνωση push",
+    Temperature = "Θερμοκρασία",
+    Humidity = "Υγρασία",
+    Pressure = "Πίεση",
+    Wind = "Άνεμος",
+    Rain = "Βροχή",
+    Forecast = "Πρόβλεψη",
+    Station = "Σταθμός",
+    Fetched = "Παραλήφθηκαν",
+    Data_processed = "Επεξεργασμένα δεδομένα",
+    Update_interval = "Η επόμενη ενημέρωση θα γίνει σε (min)",
+    No_data_fetched = "Δεν παραλήφθηκαν δεδομένα",
+    NO_STATIONID_FOUND = "Δεν βρέθηκε το Station ID",
+    NO_DATA_FOUND = "Δεν βρέθηκαν δεδομένα"
+}
+
+WU.translation["PT"] = {
+    Exiting_loop_push = "Exiting_loop_push",
+    Push_forecast = "Previsão do impulso",
+    Temperature = "Temperatura",
+    Humidity = "Humidade",
+    Pressure = "Pressão",
+    Wind = "Vento",
+    Rain = "Chuva",
+    Forecast = "Previsão",
+    Station = "Estação",
+    Fetched = "Procurar",
+    Data_processed = "Dados processados",
+    Update_interval = "Próxima atualização será em (min)",
+    No_data_fetched = "Não foram encontrados dados",
+    NO_STATIONID_FOUND = "Não foi detetada nenhuma estação",
+    NO_DATA_FOUND = "Não foram encontrados dados"
+}
+
+WU.translation["RU"] = {
+    Exiting_loop_push = "Exiting_loop_push",
+    Push_forecast = "Прогноз Нажмите",
+    Temperature = "Температура",
+    Humidity = "Влажность",
+    Pressure = "Давление",
+    Wind = "Ветер",
+    Rain = "Дождь",
+    Forecast = "Прогноз",
+    Station = "Станция",
+    Fetched = "Получено",
+    Data_processed = "Данные обработаны",
+    Update_interval = "Следующее обновление через (мин.)",
+    No_data_fetched = "Данные не получены",
+    NO_STATIONID_FOUND = "Данная станция не найдена",
+    NO_DATA_FOUND = "Данные не найдены"
+}
 
 if WU.station == "LOCID" then
     locationID = WU.LOCID
@@ -242,7 +355,7 @@ local function errorlog(str) fibaro:debug("<font color='red'>"..str.."</font>");
 
 function Telegrambot(msg)
 local selfhttp = net.HTTPClient({timeout=2000})
-url = WU.Telegramurl .. msg
+url = WU.Telegramurl1 .. msg
 
 selfhttp:request(url, {
   options={
@@ -360,6 +473,18 @@ HomeCenter.PopupService.publish({
 }) 
 end
 
+
+function createGlobalIfNotExists(varName, defaultValue)
+  if (fibaro:getGlobal(varName) == nil) then
+    Debug("cyan", "Creating the variable: "..varName.." with value: "..defaultValue) 
+    newVar = {}
+    newVar.name = varName
+    newVar.value = defaultValue
+    local http = net.HTTPClient()
+    http:request("http://127.0.0.1:11111/api/globalVariables", { options = { method = 'POST', data = json.encode(newVar)}}) 
+  end
+end
+
 local function processWU(response)
   http:request("http://api.wunderground.com/api/"..WU.APIkey.."/conditions/forecast/lang:"..WU.language.."/q/"..WU.station..":"..locationID..".json",{
       options = {method = 'GET'},
@@ -464,6 +589,15 @@ Debug( "orange", "WU Weather - LUA Scripting by Jonny Larsson 2015/2016" );
 Debug( "orange", "Version: "..version);
 if versionCheck then
 versionChecker()
+end
+createGlobalIfNotExists("WUAPI", WU.APIkey)
+createGlobalIfNotExists("Telegramtoken1_part1", WU.Telegramtoken1_part1)
+createGlobalIfNotExists("Telegramtoken1_part2", WU.Telegramtoken1_part2)
+createGlobalIfNotExists("Telegramchat_id1", WU.Telegramchat_id1)
+if WU.dualChat_ID then
+  createGlobalIfNotExists("Telegramtoken2_part1", WU.Telegramtoken2_part1)
+  createGlobalIfNotExists("Telegramtoken2_part2", WU.Telegramtoken2_part2)
+  createGlobalIfNotExists("Telegramchat_id2", WU.Telegramchat_id2)
 end
 Debug( "yellow", "Morning forecast push will be: "..WU.push_fcst1);
 Debug( "yellow", "Afternoon forecast push will be: "..WU.push_fcst2);
