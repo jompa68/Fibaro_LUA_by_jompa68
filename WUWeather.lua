@@ -51,8 +51,11 @@
 -- 2016-07-14 - Telegram, possible to have forecast pushed to 2 different chat_id's
 -- 2016-07-15 - Save all importent values to variable. 
 -- 2016-07-15 - Added RO, GR, PT, RU and CZ translation
+-- 2016-07-16 - Possible to have different time for push to all smartphones
+-- 2016.07-17 - Bugfixes. Changed layout of JSON table for smartphoneID, time and push option
+-- 2016-07-18 - Bugfixes and better error reporting. Supports Pushover (works together with http://forum.fibaro.com/index.php?/topic/17422-tutorial-pushover-lua-vd-global-function/#entry55857
 
-version = "{2.5.0}"
+version = "{3.0.1}"
 
 WU = {}
 
@@ -61,50 +64,82 @@ versionCheck = true   -- check if new version of script exist on server
 
 WU.language = "SW";  -- EN, FR, SW, PL, NL, DE, NO, RO, CZ, GR, PT, RU (default is en)
 
-
+---- UPDATE FROM HERE ----
 -- WU settings
-WU.APIkey = "14eaxxxxxxxxx"       -- Put your WU api key here
-WU.PWS = "IGVLEBOR5"          -- The PWS location to get data for (Personal Weather Station)
-WU.LOCID = "SWXX0076"         -- The location ID to get data for (City location)
+if fibaro:getGlobal("WUAPI") ~= nil then
+  WU.APIkey = fibaro:getGlobal("WUAPI")
+  else 
+    -- [CHANGE THIS IF VALUES ARE NOT STORED IN VARIABLE PANEL]
+    WU.APIkey = "02a43xxxxxxxxxx"  --Put your WU api key here
+
+end
+
+WU.PWS = "IGVLEBOR5"            -- The PWS location to get data for (Personal Weather Station)
+WU.LOCID = "SWXX0076"           -- The location ID to get data for (City location)
 WU.station = "PWS"            -- PWS or LOCID
-  
+
+---- UPDATE FROM HERE ----  
 -- Other settings
-WU.smartphoneID = {281,32}      -- your smartphone ID's ie 211,233,333
-WU.push_fcst1 = "06:30"       -- time when forecast for today will be pushed to smartphone
-WU.push_fcst2 = "17:00"       -- time when forecast for tonight will be pushed to smartphone
+smartphoneID_and_fcst ={{281, "05:30", "16:00", "Telegram"},{32, "08:00", "16:00", "Fibaro"}} -- ID, time for morning and afternoon forecast and what push to use
 WU.sendPush = true            -- send forecast with push
-WU.pushOption = "Telegram"      -- Use Fibaro or Telegram?
 
 -- Telegram settings
 -- IMPORTANT --
 -- Telegramtoken needs to splitted into 2 parts. First part1 is before the ":", part2 is after the ":"
-WU.Telegramtoken1_part1 = "1877xxxxx"
-WU.Telegramtoken1_part2 = "AAHfzhTcsxxxxxxxxxxxxxxxxxx"
-WU.Telegramchat_id1 = "2025xxxxx"
+if fibaro:getGlobal("Telegramtoken1_part1") ~= nil then
+  WU.Telegramtoken1_part1 = fibaro:getGlobal("Telegramtoken1_part1")
+  else
+    -- [CHANGE THIS IF VALUES ARE NOT STORED IN VARIABLE PANEL] Telegramtoken needs to splitted into 2 parts. First part1 is before the ":", part2 is after the ":" 
+    WU.Telegramtoken1_part1 = "187xxxxxx" -- ********
+end
+if fibaro:getGlobal("Telegramtoken1_part2") ~= nil then
+  WU.Telegramtoken1_part2 = fibaro:getGlobal("Telegramtoken1_part2")
+  else
+    -- [CHANGE THIS IF VALUES ARE NOT STORED IN VARIABLE PANEL]Telegramtoken needs to splitted into 2 parts. First part1 is before the ":", part2 is after the ":"
+    WU.Telegramtoken1_part2 = "AAHfzhTcsKloviNxxxxxxxxxxxxxxxxx" -- ********
+end
+if fibaro:getGlobal("Telegramchat_id1") ~= nil then
+  WU.Telegramchat_id1 = fibaro:getGlobal("Telegramchat_id1")
+  else
+    -- [CHANGE THIS IF VALUES ARE NOT STORED IN VARIABLE PANEL] Telegramtoken chat_id 1  
+    WU.Telegramchat_id1 = "2025xxxxx" -- ********
+end
+
 -- If you want forecast to be pushed to a second phone
 WU.dualChat_ID = false         -- set to true if more then 1 smartphone that should have forecast pushed.
-WU.Telegramtoken2_part1 = "1877xxxxx"
-WU.Telegramtoken2_part2 = "AAHfzhTcsxxxxxxxxxxxxxxxxxx"
-WU.Telegramchat_id2 = "2025xxxxx"
+if fibaro:getGlobal("Telegramtoken2_part1") ~= nil then
+  WU.Telegramtoken2_part1 = fibaro:getGlobal("Telegramtoken2_part1")
+  else
+    -- [CHANGE THIS IF VALUES ARE NOT STORED IN VARIABLE PANEL] Telegramtoken needs to splitted into 2 parts. First part1 is before the ":", part2 is after the ":"
+    WU.Telegramtoken2_part1 = "187xxxxxx"
+end
+if fibaro:getGlobal("Telegramtoken2_part2") ~= nil then
+  WU.Telegramtoken2_part2 = fibaro:getGlobal("Telegramtoken2_part2")
+  else
+    -- [CHANGE THIS IF VALUES ARE NOT STORED IN VARIABLE PANEL] Telegramtoken needs to splitted into 2 parts. First part1 is before the ":", part2 is after the ":"
+    WU.Telegramtoken2_part2 = "AAHfzhTcsKloviNxxxxxxxxxxxxxxxxx" -- ********
+end
+if fibaro:getGlobal("Telegramchat_id2") ~= nil then
+  WU.Telegramchat_id2 = fibaro:getGlobal("Telegramchat_id2")
+  else
+  -- [CHANGE THIS IF VALUES ARE NOT STORED IN VARIABLE PANEL]Telegramtoken chat_id 2 
+    WU.Telegramchat_id2 = "2025xxxxx" -- ********
+end
 
 updateEvery = 5               -- get data every xx minutes
 WU.selfId = 150               -- ID of virtual device
 
-
----- UPDATE FROM HERE ----
 -- Read settings from variable
-if not(fibaro:getGlobal("WUAPI") == nil) and (fibaro:getGlobal("Telegramtoken_part1") == nil) and (fibaro:getGlobal("Telegramtoken_part2") == nil) and (fibaro:getGlobal("Telegramchat_id") == nil) and (fibaro:getGlobal("Telegramchat_id2") == nil ) then
-  WU.APIkey = fibaro:getGlobal("WUAPI")
-  WU.Telegramtoken1 = fibaro:getGlobal("Telegramtoken1_part1")..":"..fibaro:getGlobal("Telegramtoken1_part2")
-  WU.Telegramchat_id1 = fibaro:getGlobal("Telegramchat_id1")
-  WU.Telegramurl1 = "https://api.telegram.org/bot"..WU.Telegramtoken1.."/sendMessage?chat_id="..WU.Telegramchat_id1.."&text="
+WU.Telegramtoken1 = fibaro:getGlobal("Telegramtoken1_part1")..":"..fibaro:getGlobal("Telegramtoken1_part2")
+WU.Telegramchat_id1 = fibaro:getGlobal("Telegramchat_id1")
+WU.Telegramurl1 = "https://api.telegram.org/bot"..WU.Telegramtoken1.."/sendMessage?chat_id="..WU.Telegramchat_id1.."&text="
  
-  if WU.dualChat_ID then
-    WU.Telegramtoken2 = fibaro:getGlobal("Telegramtoken2_part1")..":" fibaro:getGlobal("Telegramtoken2_part2")
-    WU.Telegramchat_id2 = fibaro:getGlobal("Telegramchat_id2")
-    WU.Telegramurl2 = "https://api.telegram.org/bot"..WU.Telegramtoken2.."/sendMessage?chat_id="..WU.Telegramchat_id2.."&text="
-  end
+if WU.dualChat_ID then
+  WU.Telegramtoken2 = fibaro:getGlobal("Telegramtoken2_part1")..":" fibaro:getGlobal("Telegramtoken2_part2")
+  WU.Telegramchat_id2 = fibaro:getGlobal("Telegramchat_id2")
+  WU.Telegramurl2 = "https://api.telegram.org/bot"..WU.Telegramtoken2.."/sendMessage?chat_id="..WU.Telegramchat_id2.."&text="
 end
+
 -- End read settings from variable
 
 WU.translation = {true}
@@ -173,24 +208,24 @@ WU.translation["SW"] = {
  }
  
 WU.translation["PL"] = {
-    Exiting_loop_push = "Exiting_loop_push",
-    Push_forecast = "Push prognoza",
+    Exiting_loop_push = "Kończę pętlę PUSH",
+    Push_forecast = "PUSH prognozy",
     Temperature = "Temperatura",
     Humidity = "Wilgotność",
-    Pressure = "Pressure",
+    Pressure = "Ciśnienie",
     Wind = "Wiatr",
     Rain = "Deszcz",
     Forecast = "Prognoza",
     Station = "Stacja",
-    Fetched = "Nie pobrano danyc",
+    Fetched = "Nie pobrano danych",
     Data_processed = "Dane przetworzone",
-    new_version = "New version of WUWeather.lua script is out! ",
+    new_version = "Dostępna nowa wersja skryptu WUWeather.lua ! ",
     script_url = "http://jonnylarsson.se/JL/",
     No_data_fetched = "Brak danych",
     Update_interval = "Następna aktualizacja za (min)",
-    NO_STATIONID_FOUND = "No stationID found",
+    NO_STATIONID_FOUND = "Nie znaleziono ID Stacji",
     NO_DATA_FOUND = "Brak danych"
-  }
+}
   
 WU.translation["NL"] = {
     Exiting_loop_push = "Exiting_loop_push",
@@ -350,8 +385,16 @@ end
 Debug = function ( color, message )
   fibaro:debug(string.format('<%s style="color:%s;">%s</%s>', "span", color, message, "span")); 
 end
-local function log(str) if debug then fibaro:debug(str); end; end
-local function errorlog(str) fibaro:debug("<font color='red'>"..str.."</font>"); end
+
+function log(str) 
+  if debug then 
+    fibaro:debug(str); 
+  end
+end
+
+function errorlog(str) 
+  fibaro:debug("<font color='red'>"..str.."</font>")
+end
 
 function Telegrambot(msg)
 local selfhttp = net.HTTPClient({timeout=2000})
@@ -404,6 +447,7 @@ selfhttp:request(url2, {
 end
 end
 
+
 function versionChecker()
 local function getMethod(requestUrl, successCallback, errorCallback)
 local http = net.HTTPClient()
@@ -428,10 +472,12 @@ getMethod(url, function(resp)
       Debug("grey", "Checking script version...") 
       Debug("yellow", "There is a new version out! "..'<a href="http://jonnylarsson.se/JL/WUWeather.lua" target="_blank" style="display:inline;color:Cyan">Get it!</a>')
     if WU.sendPush then
-      if WU.pushOption == "Fibaro" then
-        fibaro:call(WU.smartphoneID , "sendPush", WU.translation[WU.language]["new_version"].." "..WU.translation[WU.language]["script_url"])
-        elseif WU.pushOption == "Telegram" then
-        Telegrambot(WU.translation[WU.language]["new_version"].." "..WU.translation[WU.language]["script_url"])
+      for k,smartphoneID_and_fcst in ipairs(smartphoneID_and_fcst) do
+      	if smartphoneID_and_fcst[4] == "Fibaro" then
+        	fibaro:call(smartphoneID_and_fcst[1] , "sendPush", WU.translation[WU.language]["new_version"].." "..WU.translation[WU.language]["script_url"])
+        elseif smartphoneID_and_fcst[4] == "Telegram" then
+        	Telegrambot(WU.translation[WU.language]["new_version"].." "..WU.translation[WU.language]["script_url"])
+      	end
       end
     end
     end
@@ -493,11 +539,12 @@ local function processWU(response)
     })
   Debug( "green", "Now downloading data from www.wunderground.com");
   if response then -- the first time you enter the loop, this will be nil
-    if response.status~=200 then
-    Debug( "red", "Server returned an error, but will retry. Error: "..response.status)
+    jsonTable = json.decode(response.data)
+    if jsonTable.response.error ~= nil then
+      Debug( "red", jsonTable.response.error.description)
     else
-        WU.now = os.date("%H:%M")
         jsonTable = json.decode(response.data)
+        WU.now = os.date("%H:%M")
         stationID = jsonTable.current_observation.station_id
         city = jsonTable.current_observation.observation_location.city
         humidity = jsonTable.current_observation.relative_humidity
@@ -513,6 +560,8 @@ local function processWU(response)
         fcstday2 = jsonTable.forecast.txt_forecast.forecastday[2].title
         fcst2 = jsonTable.forecast.txt_forecast.forecastday[2].fcttext_metric
         fcst2icon = jsonTable.forecast.txt_forecast.forecastday[2].icon_url
+        fcst1_mobile = jsonTable.forecast.simpleforecast.forecastday[1].conditions
+        fcst2_mobile = jsonTable.forecast.simpleforecast.forecastday[2].conditions
         if (stationID ~= nil) then
           fibaro:call(WU.selfId , "setProperty", "ui.lblStation.value", locationID);
           fibaro:call(WU.selfId , "setProperty", "ui.lblCity.value", city);
@@ -522,41 +571,48 @@ local function processWU(response)
           fibaro:call(WU.selfId , "setProperty", "ui.lblWind.value", WU.translation[WU.language]["Wind"].." "..wind.." km/h");
           fibaro:call(WU.selfId , "setProperty", "ui.lblRain.value", WU.translation[WU.language]["Rain"].." "..rain.." mm");
               if (WU.now >= "03:00" and WU.now <= "15:59") then
-                  fibaro:call(WU.selfId , "setProperty", "ui.lblFcst.value",WU.translation[WU.language]["Forecast"].." "..fcstday1.." - "..fcst1);
+                fibaro:call(WU.selfId , "setProperty", "ui.lblFcst.value",WU.translation[WU.language]["Forecast"].." "..fcstday1.." - "..fcst1_mobile);
                   --fibaro:call(WU.selfId , "setProperty", "ui.lblIcon.value","<img src=http://jonnylarsson.se/JL/png/"..icon..".png>");
                 elseif (WU.now >= "16:00" and WU.now <= "23:59") then
                   --fibaro:call(WU.selfId , "setProperty", "ui.lblIcon.value","<img src=http://jonnylarsson.se/JL/png/nt_"..icon..".png>");
-                fibaro:call(WU.selfId , "setProperty", "ui.lblFcst.value", WU.translation[WU.language]["Forecast"].." "..fcstday2.." - "..fcst2);
+                fibaro:call(WU.selfId , "setProperty", "ui.lblFcst.value", WU.translation[WU.language]["Forecast"].." "..fcstday2.." - "..fcst2_mobile);
               end
             if WU.sendPush then
-                if (os.date("%H:%M") == WU.push_fcst1) then
+              for k,smartphoneID_and_fcst in ipairs(smartphoneID_and_fcst) do
+                if (os.date("%H:%M") == smartphoneID_and_fcst[2]) then
                   if versionCheck then
                     versionChecker()
                   end
-                  if WU.pushOption == "Fibaro" then
+                  if smartphoneID_and_fcst[4] == "Fibaro" then
                     fcastday = fcstday1
                     fcast = fcst1
-                    for i, j in pairs(WU.smartphoneID) do
-                      fibaro:call(j, "sendPush", fcstday1.." - "..fcst1)
-                      popupIMG = "http://jonnylarsson.se/JL/png/"..icon..".png"
-                      sendPopup()
-                    end
-                  elseif WU.pushOption == "Telegram" then
-                  Telegrambot(fcstday1.." - "..string.lower(fcst1).." - "..fcst1icon)
-                  end
-                elseif (os.date("%H:%M") == WU.push_fcst2) then
-                  if WU.pushOption == "Fibaro" then
-                  fcastday = fcstday2
-                  fcast = fcst2
-                    for i, j in pairs(WU.smartphoneID) do
-                      fibaro:call(j , "sendPush", fcstday2.." - "..fcst2)
-                      popupIMG = "http://jonnylarsson.se/JL/png/nt_"..icon..".png"
-                      sendPopup()
-                    end
-                  elseif WU.pushOption == "Telegram" then
-                      Telegrambot(fcstday2.." - "..string.lower(fcst2).." - "..fcst2icon)
+                    fibaro:call(smartphoneID_and_fcst[1], "sendPush", fcstday1.." - "..fcst1)
+                    popupIMG = "http://jonnylarsson.se/JL/png/"..icon..".png"
+                    sendPopup()
+                    Debug("grey", "Sucessfully sent push message to "..smartphoneID_and_fcst[1]) 
+                  elseif smartphoneID_and_fcst[4]  == "Telegram" then
+                    Telegrambot(fcstday1.." - "..string.lower(fcst1).." - "..fcst1icon)
+                  elseif smartphoneID_and_fcst[4]  == "Pushover" then
+                    ibaro:setGlobal("pushoverBody", fcstday1.." - "..string.lower(fcst1).." - "..fcst1icon)
                   end
                 end
+              end
+              for k,smartphoneID_and_fcst in ipairs(smartphoneID_and_fcst) do
+                if (os.date("%H:%M") == smartphoneID_and_fcst[3]) then
+                  if smartphoneID_and_fcst[4] == "Fibaro" then
+                    fcastday = fcstday2
+                    fcast = fcst2
+                    fibaro:call(smartphoneID_and_fcst[1] , "sendPush", fcstday2.." - "..fcst2)
+                    popupIMG = "http://jonnylarsson.se/JL/png/nt_"..icon..".png"
+                    sendPopup()
+                    Debug("grey", "Sucessfully sent push message to "..smartphoneID_and_fcst[1]) 
+                  elseif smartphoneID_and_fcst[4]  == "Telegram" then
+                      Telegrambot(fcstday2.." - "..string.lower(fcst2).." - "..fcst2icon)
+                  elseif smartphoneID_and_fcst[4]  == "Pushover" then
+                    fibaro:setGlobal("pushoverBody", fcstday2.." - "..string.lower(fcst2).." - "..fcst2icon)
+                  end
+                end
+              end
             end
             if WU.sendPush then
               fibaro:call(WU.selfId , "setProperty", "ui.lblNotify.value", WU.translation[WU.language]["Push_forecast"].."  = true");
@@ -571,16 +627,18 @@ local function processWU(response)
       end
     end
     sleepAndcheck = 0
-  while sleepAndcheck <= 20*updateEvery do
-    fibaro:sleep(3000)
-    sleepAndcheck = sleepAndcheck+1
-    if (DoNotRecheckBefore <= os.time()) and ((WU.scheduler == os.time) or (os.date("%H:%M") == WU.push_fcst1) or (os.date("%H:%M") == WU.push_fcst2)) then
+    while sleepAndcheck <= 20*updateEvery do
+      fibaro:sleep(3000)
+      sleepAndcheck = sleepAndcheck+1
+      for k,smartphoneID_and_fcst in ipairs(smartphoneID_and_fcst) do
+      if (DoNotRecheckBefore <= os.time()) and ((WU.scheduler == os.time) or (os.date("%H:%M") == smartphoneID_and_fcst[2]) or (os.date("%H:%M") == smartphoneID_and_fcst[3])) then
       fibaro:debug(WU.translation[WU.language]["Push_forecast"])
       Debug("orange", WU.translation[WU.language]["Exiting_loop_push"]);
       DoNotRecheckBefore = os.time()+60
       sleepAndcheck = 20*updateEvery
+      end
+      end
     end
-  end
   end
 end
 
@@ -599,8 +657,12 @@ if WU.dualChat_ID then
   createGlobalIfNotExists("Telegramtoken2_part2", WU.Telegramtoken2_part2)
   createGlobalIfNotExists("Telegramchat_id2", WU.Telegramchat_id2)
 end
-Debug( "yellow", "Morning forecast push will be: "..WU.push_fcst1);
-Debug( "yellow", "Afternoon forecast push will be: "..WU.push_fcst2);
+for k,smartphoneID_and_fcst in ipairs(smartphoneID_and_fcst) do
+  Debug( "yellow", "Morning forecast push will be for ID: "..smartphoneID_and_fcst[1].." @ "..smartphoneID_and_fcst[2].." with "..smartphoneID_and_fcst[4]);
+  Debug( "yellow", "Afternoon forecast push will be for ID: "..smartphoneID_and_fcst[1].." @ "..smartphoneID_and_fcst[3].." with "..smartphoneID_and_fcst[4]);
+end
 processWU() --this starts an endless loop, until an error occurs
 
 ---- END OF UPDATE ----
+
+
