@@ -54,8 +54,76 @@
 -- 2016-07-16 - Possible to have different time for push to all smartphones
 -- 2016.07-17 - Bugfixes. Changed layout of JSON table for smartphoneID, time and push option
 -- 2016-07-18 - Bugfixes and better error reporting. Supports Pushover (works together with http://forum.fibaro.com/index.php?/topic/17422-tutorial-pushover-lua-vd-global-function/#entry55857
+-- 2016-07-19 - Bugfixes again.
 
-version = "{3.0.1}"
+
+version = "{3.0.2}"
+
+WU = {}
+
+
+versionCheck = true   -- check if new version of script exist on server
+
+WU.language = "SW";  -- EN, FR, SW, PL, NL, DE, NO, RO, CZ, GR, PT, RU (default is en)
+
+--[[
+%% autostart
+%% properties
+%% globals
+--]]
+-------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------
+-- HOWTO --
+-- 1. Create a virtual device with 9 labels and set the ID to like below, else this scene will not work.
+-- 2. lblTemp, lblHum, lblBar, lblWind, lblRain, lblFcst, lblStation, lblUpdate, lblNotify
+-- 3. Change ID of virtual device in WU.selfId
+
+-- FIRST TIME USERS NEEDS TO COPY ALL CODE TO SCENE, after version 2.5.0 it should only be neccessary to update from "UPDATE FROM HERE" text
+
+-- NOTE --
+-- Scheduled time you set for forecast push is just an indication of time.
+-- Real time will be the hour you set + minute of when scene starts.
+-- Script will check server version for new updated version (default = true)
+
+-- WU WeatherData - Fetch weather data from wunderground.com. Multilanguage support!
+-- Inspired by GEA(steven), stevenvd, Krikroff and many other users.
+-- Source - forum.fibaro.com, domotique-fibaro.fr and worldwideweb
+-- Special thanks to petergebruers from forum.fibaro.com with demo script
+--
+--
+
+-- PWS = Personal Weather Station
+-- LOCID = Public station
+--
+-- 
+-- 2014-03-22 - Permissions granted from Krikroff :)
+-- 2014-03-23 - Added rain and forecast, Added FR language. 
+-- 2014-03-23 - Language variable changed to get the translation from wunderground.com in forcast
+-- 2014-03-24 - Added PL language
+-- 2014-03-24 - Select between PWS or LOCID to download weather data
+-- 2015-10-23 - New source code.
+-- 2015-10-23 - Added NL translation
+-- 2015-11-16 - Added DE, FR translation. Fixed some bug in the code(hardcoded smartphoneID,inch to metric for rain value)
+-- 2015-11-18 - Script moved to scene instead of mainloop in VD. VD is only used as GUI.
+-- 2015-11-18 - Send push if script cannot fetch data
+-- 2015-11-26 - adjustment of code. Function from sebcbien at domotique-fibaro.fr
+-- 2015-11-27 - Oops! Removed forecast push by mistace.
+-- 2016-02-11 - send push if new version of script is out
+-- 2016-03-31 - Added NO translation, did cleanup the code a little bit.
+-- 2016-03-31 - It is now posible to use Telegram as push. Change WU.pushOption value to Telegram or Fibaro. 
+--            - also change WU.Telegramtoken and WU.Telegramchat_id to your values
+-- 2016-04-01 - Fixed bug when using Telegram push, forecast must send with lowercases.
+-- 2016-05-26 - Added support for multiple smartphone id when sending push
+-- 2016-05-30 - Implemented "UPDATE SECTION"
+-- 2016-07-13 - Bug fixed some code for sendPush to fibaro app
+-- 2016-07-14 - Telegram, possible to have forecast pushed to 2 different chat_id's
+-- 2016-07-15 - Save all importent values to variable. 
+-- 2016-07-15 - Added RO, GR, PT, RU and CZ translation
+-- 2016-07-16 - Possible to have different time for push to all smartphones
+-- 2016.07-17 - Bugfixes. Changed layout of JSON table for smartphoneID, time and push option
+-- 2016-07-18 - Bugfixes and better error reporting. Supports Pushover (works together with http://forum.fibaro.com/index.php?/topic/17422-tutorial-pushover-lua-vd-global-function/#entry55857
+
+version = "{3.0.2}"
 
 WU = {}
 
@@ -66,12 +134,11 @@ WU.language = "SW";  -- EN, FR, SW, PL, NL, DE, NO, RO, CZ, GR, PT, RU (default 
 
 ---- UPDATE FROM HERE ----
 -- WU settings
-if fibaro:getGlobal("WUAPI") ~= nil then
+if not fibaro:getGlobal("WUAPI") == nil then
   WU.APIkey = fibaro:getGlobal("WUAPI")
   else 
     -- [CHANGE THIS IF VALUES ARE NOT STORED IN VARIABLE PANEL]
-    WU.APIkey = "02a43xxxxxxxxxx"  --Put your WU api key here
-
+    WU.APIkey = "14eafxxxxxxxxxxxx"  --Put your WU api key here
 end
 
 WU.PWS = "IGVLEBOR5"            -- The PWS location to get data for (Personal Weather Station)
@@ -86,19 +153,19 @@ WU.sendPush = true            -- send forecast with push
 -- Telegram settings
 -- IMPORTANT --
 -- Telegramtoken needs to splitted into 2 parts. First part1 is before the ":", part2 is after the ":"
-if fibaro:getGlobal("Telegramtoken1_part1") ~= nil then
+if not fibaro:getGlobal("Telegramtoken1_part1") == nil then
   WU.Telegramtoken1_part1 = fibaro:getGlobal("Telegramtoken1_part1")
   else
     -- [CHANGE THIS IF VALUES ARE NOT STORED IN VARIABLE PANEL] Telegramtoken needs to splitted into 2 parts. First part1 is before the ":", part2 is after the ":" 
-    WU.Telegramtoken1_part1 = "187xxxxxx" -- ********
+    WU.Telegramtoken1_part1 = "1877xxxxxxx" -- ********
 end
-if fibaro:getGlobal("Telegramtoken1_part2") ~= nil then
+if not fibaro:getGlobal("Telegramtoken1_part2") == nil then
   WU.Telegramtoken1_part2 = fibaro:getGlobal("Telegramtoken1_part2")
   else
     -- [CHANGE THIS IF VALUES ARE NOT STORED IN VARIABLE PANEL]Telegramtoken needs to splitted into 2 parts. First part1 is before the ":", part2 is after the ":"
     WU.Telegramtoken1_part2 = "AAHfzhTcsKloviNxxxxxxxxxxxxxxxxx" -- ********
 end
-if fibaro:getGlobal("Telegramchat_id1") ~= nil then
+if not fibaro:getGlobal("Telegramchat_id1") == nil then
   WU.Telegramchat_id1 = fibaro:getGlobal("Telegramchat_id1")
   else
     -- [CHANGE THIS IF VALUES ARE NOT STORED IN VARIABLE PANEL] Telegramtoken chat_id 1  
@@ -107,19 +174,19 @@ end
 
 -- If you want forecast to be pushed to a second phone
 WU.dualChat_ID = false         -- set to true if more then 1 smartphone that should have forecast pushed.
-if fibaro:getGlobal("Telegramtoken2_part1") ~= nil then
+if not fibaro:getGlobal("Telegramtoken2_part1") == nil then
   WU.Telegramtoken2_part1 = fibaro:getGlobal("Telegramtoken2_part1")
   else
     -- [CHANGE THIS IF VALUES ARE NOT STORED IN VARIABLE PANEL] Telegramtoken needs to splitted into 2 parts. First part1 is before the ":", part2 is after the ":"
     WU.Telegramtoken2_part1 = "187xxxxxx"
 end
-if fibaro:getGlobal("Telegramtoken2_part2") ~= nil then
+if not fibaro:getGlobal("Telegramtoken2_part2") == nil then
   WU.Telegramtoken2_part2 = fibaro:getGlobal("Telegramtoken2_part2")
   else
     -- [CHANGE THIS IF VALUES ARE NOT STORED IN VARIABLE PANEL] Telegramtoken needs to splitted into 2 parts. First part1 is before the ":", part2 is after the ":"
     WU.Telegramtoken2_part2 = "AAHfzhTcsKloviNxxxxxxxxxxxxxxxxx" -- ********
 end
-if fibaro:getGlobal("Telegramchat_id2") ~= nil then
+if not fibaro:getGlobal("Telegramchat_id2") == nil then
   WU.Telegramchat_id2 = fibaro:getGlobal("Telegramchat_id2")
   else
   -- [CHANGE THIS IF VALUES ARE NOT STORED IN VARIABLE PANEL]Telegramtoken chat_id 2 
@@ -129,18 +196,6 @@ end
 updateEvery = 5               -- get data every xx minutes
 WU.selfId = 150               -- ID of virtual device
 
--- Read settings from variable
-WU.Telegramtoken1 = fibaro:getGlobal("Telegramtoken1_part1")..":"..fibaro:getGlobal("Telegramtoken1_part2")
-WU.Telegramchat_id1 = fibaro:getGlobal("Telegramchat_id1")
-WU.Telegramurl1 = "https://api.telegram.org/bot"..WU.Telegramtoken1.."/sendMessage?chat_id="..WU.Telegramchat_id1.."&text="
- 
-if WU.dualChat_ID then
-  WU.Telegramtoken2 = fibaro:getGlobal("Telegramtoken2_part1")..":" fibaro:getGlobal("Telegramtoken2_part2")
-  WU.Telegramchat_id2 = fibaro:getGlobal("Telegramchat_id2")
-  WU.Telegramurl2 = "https://api.telegram.org/bot"..WU.Telegramtoken2.."/sendMessage?chat_id="..WU.Telegramchat_id2.."&text="
-end
-
--- End read settings from variable
 
 WU.translation = {true}
 WU.currentDate = os.date("*t"); 
@@ -397,6 +452,18 @@ function errorlog(str)
 end
 
 function Telegrambot(msg)
+-- Read settings from variable
+WU.Telegramtoken1 = fibaro:getGlobal("Telegramtoken1_part1")..":"..fibaro:getGlobal("Telegramtoken1_part2")
+WU.Telegramchat_id1 = fibaro:getGlobal("Telegramchat_id1")
+WU.Telegramurl1 = "https://api.telegram.org/bot"..WU.Telegramtoken1.."/sendMessage?chat_id="..WU.Telegramchat_id1.."&text="
+ 
+if WU.dualChat_ID then
+  WU.Telegramtoken2 = fibaro:getGlobal("Telegramtoken2_part1")..":" fibaro:getGlobal("Telegramtoken2_part2")
+  WU.Telegramchat_id2 = fibaro:getGlobal("Telegramchat_id2")
+  WU.Telegramurl2 = "https://api.telegram.org/bot"..WU.Telegramtoken2.."/sendMessage?chat_id="..WU.Telegramchat_id2.."&text="
+end
+
+-- End read settings from variable
 local selfhttp = net.HTTPClient({timeout=2000})
 url = WU.Telegramurl1 .. msg
 
@@ -593,7 +660,7 @@ local function processWU(response)
                   elseif smartphoneID_and_fcst[4]  == "Telegram" then
                     Telegrambot(fcstday1.." - "..string.lower(fcst1).." - "..fcst1icon)
                   elseif smartphoneID_and_fcst[4]  == "Pushover" then
-                    ibaro:setGlobal("pushoverBody", fcstday1.." - "..string.lower(fcst1).." - "..fcst1icon)
+                    fibaro:setGlobal("pushoverBody", fcstday1.." - "..string.lower(fcst1).." - "..fcst1icon)
                   end
                 end
               end
@@ -664,5 +731,3 @@ end
 processWU() --this starts an endless loop, until an error occurs
 
 ---- END OF UPDATE ----
-
-
