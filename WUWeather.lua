@@ -688,7 +688,7 @@ local function processWU(response)
                     sendPopup()
                     Debug("grey", "Sucessfully sent push message to "..smartphoneID_and_fcst[1]) 
                   elseif smartphoneID_and_fcst[4]  == "Telegram" then
-                    Telegrambot(fcstday1.."%0A"..string.lower(fcst1).."%0A"..fcst1icon.."%0A".."%0A"..fcstday2.."%0A"..string.lower(fcst2))
+                    Telegrambot("*"..fcstday1.."*".."%0A"..string.lower(fcst1).."%0A"..fcst1icon.."%0A".."%0A"..fcstday2.."%0A"..string.lower(fcst2))
                   elseif smartphoneID_and_fcst[4]  == "Pushover" then
                     fibaro:setGlobal("pushoverBody", fcstday1.." - "..string.lower(fcst1).." - "..fcst1icon)
                   end
@@ -704,7 +704,7 @@ local function processWU(response)
                     sendPopup()
                     Debug("grey", "Sucessfully sent push message to "..smartphoneID_and_fcst[1]) 
                   elseif smartphoneID_and_fcst[4]  == "Telegram" then
-                    Telegrambot(fcstday2.."%0A"..string.lower(fcst2).."%0A"..fcst2icon.."%0A".."%0A"..fcstday3.."%0A"..string.lower(fcst3))
+                    Telegrambot("*"..fcstday2.."*".."%0A"..string.lower(fcst2).."%0A"..fcst2icon.."%0A".."%0A"..fcstday3.."%0A"..string.lower(fcst3))
                   elseif smartphoneID_and_fcst[4]  == "Pushover" then
                     fibaro:setGlobal("pushoverBody", fcstday2.." - "..string.lower(fcst2).." - "..fcst2icon)
                   end
