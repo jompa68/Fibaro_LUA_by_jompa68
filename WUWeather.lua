@@ -122,8 +122,11 @@ WU.language = "SW";  -- EN, FR, SW, PL, NL, DE, NO, RO, CZ, GR, PT, RU (default 
 -- 2016-07-16 - Possible to have different time for push to all smartphones
 -- 2016.07-17 - Bugfixes. Changed layout of JSON table for smartphoneID, time and push option
 -- 2016-07-18 - Bugfixes and better error reporting. Supports Pushover (works together with http://forum.fibaro.com/index.php?/topic/17422-tutorial-pushover-lua-vd-global-function/#entry55857
+-- 2016-07-22 - Added seconde forcast to both morning and afternoon push message. Added parse_mode for bold telegram text message
+-- 2016-07-24 - Added ES (Spanish) translation
 
-version = "{3.0.2}"
+
+
 
 WU = {}
 
@@ -145,7 +148,9 @@ WU.PWS = "IGVLEBOR5"            -- The PWS location to get data for (Personal We
 WU.LOCID = "SWXX0076"           -- The location ID to get data for (City location)
 WU.station = "PWS"            -- PWS or LOCID
 
----- UPDATE FROM HERE ----  
+---- UPDATE FROM HERE ---- 
+version = "{V3.0.4}"
+
 -- Other settings
 smartphoneID_and_fcst ={{281, "05:30", "16:00", "Telegram"},{32, "08:00", "16:00", "Fibaro"}} -- ID, time for morning and afternoon forecast and what push to use
 WU.sendPush = true            -- send forecast with push
@@ -157,20 +162,21 @@ if not fibaro:getGlobal("Telegramtoken1_part1") == nil then
   WU.Telegramtoken1_part1 = fibaro:getGlobal("Telegramtoken1_part1")
   else
     -- [CHANGE THIS IF VALUES ARE NOT STORED IN VARIABLE PANEL] Telegramtoken needs to splitted into 2 parts. First part1 is before the ":", part2 is after the ":" 
-    WU.Telegramtoken1_part1 = "1877xxxxxxx" -- ********
+    WU.Telegramtoken1_part1 = "187789862" -- ********
 end
 if not fibaro:getGlobal("Telegramtoken1_part2") == nil then
   WU.Telegramtoken1_part2 = fibaro:getGlobal("Telegramtoken1_part2")
   else
     -- [CHANGE THIS IF VALUES ARE NOT STORED IN VARIABLE PANEL]Telegramtoken needs to splitted into 2 parts. First part1 is before the ":", part2 is after the ":"
-    WU.Telegramtoken1_part2 = "AAHfzhTcsKloviNxxxxxxxxxxxxxxxxx" -- ********
+    WU.Telegramtoken1_part2 = "AAHfzhTcsKloviNzuYjiK92XGETxNMZGMLc" -- ********
 end
 if not fibaro:getGlobal("Telegramchat_id1") == nil then
   WU.Telegramchat_id1 = fibaro:getGlobal("Telegramchat_id1")
   else
     -- [CHANGE THIS IF VALUES ARE NOT STORED IN VARIABLE PANEL] Telegramtoken chat_id 1  
-    WU.Telegramchat_id1 = "2025xxxxx" -- ********
+    WU.Telegramchat_id1 = "202517392" -- ********
 end
+
 
 -- If you want forecast to be pushed to a second phone
 WU.dualChat_ID = false         -- set to true if more then 1 smartphone that should have forecast pushed.
@@ -430,6 +436,27 @@ WU.translation["RU"] = {
     NO_DATA_FOUND = "Данные не найдены"
 }
 
+WU.translation["ES"] = {
+    Exiting_loop_push = "Exiting_loop_push",
+    Push_forecast = "Pronóstico enviado",
+    Temperature = "Temperatura",
+    Humidity = "Humedad",
+    Pressure = "Presión",
+    Wind = "Viento",
+    Rain = "Precipitaciones",
+    Forecast = "Pronóstico",
+    Station = "Estación",
+    Fetched = "Extraído",
+    Data_processed = "Datos procesados",
+    Update_interval = "La próxima actualización será en (min)",
+    No_data_fetched = "Ningún dato extraído",
+    new_version = "Nueva versión del script WUWeather.lua disponible! ",
+    script_url = "http://jonnylarsson.se/JL/",
+    NO_STATIONID_FOUND = "No se ha encontrado la stationID",
+    NO_DATA_FOUND = "Datos no encontrados"
+  }
+
+
 if WU.station == "LOCID" then
     locationID = WU.LOCID
 elseif 
@@ -455,12 +482,12 @@ function Telegrambot(msg)
 -- Read settings from variable
 WU.Telegramtoken1 = fibaro:getGlobal("Telegramtoken1_part1")..":"..fibaro:getGlobal("Telegramtoken1_part2")
 WU.Telegramchat_id1 = fibaro:getGlobal("Telegramchat_id1")
-WU.Telegramurl1 = "https://api.telegram.org/bot"..WU.Telegramtoken1.."/sendMessage?chat_id="..WU.Telegramchat_id1.."&text="
+WU.Telegramurl1 = "https://api.telegram.org/bot"..WU.Telegramtoken1.."/sendMessage?chat_id="..WU.Telegramchat_id1.."&parse_mode=Markdown".."&text="
  
 if WU.dualChat_ID then
   WU.Telegramtoken2 = fibaro:getGlobal("Telegramtoken2_part1")..":" fibaro:getGlobal("Telegramtoken2_part2")
   WU.Telegramchat_id2 = fibaro:getGlobal("Telegramchat_id2")
-  WU.Telegramurl2 = "https://api.telegram.org/bot"..WU.Telegramtoken2.."/sendMessage?chat_id="..WU.Telegramchat_id2.."&text="
+  WU.Telegramurl2 = "https://api.telegram.org/bot"..WU.Telegramtoken2.."/sendMessage?chat_id="..WU.Telegramchat_id2.."&parse_mode=Markdown".."&text="
 end
 
 -- End read settings from variable
@@ -533,18 +560,18 @@ local url = 'http://jonnylarsson.se/JL/'..content
 
 getMethod(url, function(resp)
   s = resp.data
-    serverVersion = string.match(s, "{(.-)}");
+    serverVersion = string.match(s, "{V(.-)}");
     scriptVersion = string.match(version, "{(.-)}");
     if serverVersion > scriptVersion then
       Debug("grey", "Checking script version...") 
       Debug("yellow", "There is a new version out! "..'<a href="http://jonnylarsson.se/JL/WUWeather.lua" target="_blank" style="display:inline;color:Cyan">Get it!</a>')
     if WU.sendPush then
       for k,smartphoneID_and_fcst in ipairs(smartphoneID_and_fcst) do
-      	if smartphoneID_and_fcst[4] == "Fibaro" then
-        	fibaro:call(smartphoneID_and_fcst[1] , "sendPush", WU.translation[WU.language]["new_version"].." "..WU.translation[WU.language]["script_url"])
+        if smartphoneID_and_fcst[4] == "Fibaro" then
+          fibaro:call(smartphoneID_and_fcst[1] , "sendPush", WU.translation[WU.language]["new_version"].." "..WU.translation[WU.language]["script_url"])
         elseif smartphoneID_and_fcst[4] == "Telegram" then
-        	Telegrambot(WU.translation[WU.language]["new_version"].." "..WU.translation[WU.language]["script_url"])
-      	end
+          Telegrambot(WU.translation[WU.language]["new_version"].." "..WU.translation[WU.language]["script_url"])
+        end
       end
     end
     end
@@ -627,6 +654,9 @@ local function processWU(response)
         fcstday2 = jsonTable.forecast.txt_forecast.forecastday[2].title
         fcst2 = jsonTable.forecast.txt_forecast.forecastday[2].fcttext_metric
         fcst2icon = jsonTable.forecast.txt_forecast.forecastday[2].icon_url
+        fcstday3 = jsonTable.forecast.txt_forecast.forecastday[3].title
+        fcst3 = jsonTable.forecast.txt_forecast.forecastday[3].fcttext_metric
+        fcst3icon = jsonTable.forecast.txt_forecast.forecastday[3].icon_url
         fcst1_mobile = jsonTable.forecast.simpleforecast.forecastday[1].conditions
         fcst2_mobile = jsonTable.forecast.simpleforecast.forecastday[2].conditions
         if (stationID ~= nil) then
@@ -658,7 +688,7 @@ local function processWU(response)
                     sendPopup()
                     Debug("grey", "Sucessfully sent push message to "..smartphoneID_and_fcst[1]) 
                   elseif smartphoneID_and_fcst[4]  == "Telegram" then
-                    Telegrambot(fcstday1.." - "..string.lower(fcst1).." - "..fcst1icon)
+                    Telegrambot(fcstday1.."%0A"..string.lower(fcst1).."%0A"..fcst1icon.."%0A".."%0A"..fcstday2.."%0A"..string.lower(fcst2))
                   elseif smartphoneID_and_fcst[4]  == "Pushover" then
                     fibaro:setGlobal("pushoverBody", fcstday1.." - "..string.lower(fcst1).." - "..fcst1icon)
                   end
@@ -674,7 +704,7 @@ local function processWU(response)
                     sendPopup()
                     Debug("grey", "Sucessfully sent push message to "..smartphoneID_and_fcst[1]) 
                   elseif smartphoneID_and_fcst[4]  == "Telegram" then
-                      Telegrambot(fcstday2.." - "..string.lower(fcst2).." - "..fcst2icon)
+                    Telegrambot(fcstday2.."%0A"..string.lower(fcst2).."%0A"..fcst2icon.."%0A".."%0A"..fcstday3.."%0A"..string.lower(fcst3))
                   elseif smartphoneID_and_fcst[4]  == "Pushover" then
                     fibaro:setGlobal("pushoverBody", fcstday2.." - "..string.lower(fcst2).." - "..fcst2icon)
                   end
@@ -730,4 +760,4 @@ for k,smartphoneID_and_fcst in ipairs(smartphoneID_and_fcst) do
 end
 processWU() --this starts an endless loop, until an error occurs
 
----- END OF UPDATE ----
+---- END OF UPDATE ---
